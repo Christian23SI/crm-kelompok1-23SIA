@@ -5,6 +5,7 @@ import viteLogo from '/vite.svg'
 import { Route, Routes } from 'react-router-dom'
 import MainLayout from './components/MainLayout'
 import Dashboard from './pages/Dashboard'
+import CustomerManagement from './pages/CustomerManagement'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -14,6 +15,7 @@ function App() {
       <Routes>
         <Route element={<MainLayout />} >
         <Route path='/' element={<Dashboard />} />
+        <Route path='/customermanagement' element={<CustomerManagement />} />
         </Route>
       </Routes>
     </>
