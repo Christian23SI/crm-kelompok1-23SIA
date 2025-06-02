@@ -17,6 +17,7 @@ const menuItems = [
   { name: 'Laporan', icon: <BarChart2 />, path: '/laporan' },
   { name: 'Pelanggan', icon: <Users />, path: '/customermanagement' },
   { name: 'Penjualan', icon: <ShoppingCart />, path: '/penjualan' },
+  { name: 'FAQ', icon: <Users />, path: '/faq' },
 ]
 
 const accountItems = [
