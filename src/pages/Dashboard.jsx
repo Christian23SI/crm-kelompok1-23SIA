@@ -126,10 +126,10 @@ const Dashboard = () => {
 
   // Data pesanan terbaru
   const recentOrders = [
-    { id: "#FC-1001", customer: "Budi Santoso", items: "2x Latte, 1x Croissant", total: "Rp 85.000", status: "Selesai" },
-    { id: "#FC-1002", customer: "Ani Wijaya", items: "1x Espresso", total: "Rp 25.000", status: "Diproses" },
-    { id: "#FC-1003", customer: "Rina Permata", items: "3x Cappuccino, 2x Sandwich", total: "Rp 145.000", status: "Selesai" },
-    { id: "#FC-1004", customer: "Doni Pratama", items: "1x Americano, 1x Muffin", total: "Rp 65.000", status: "Dibatalkan" }
+    { id: "INV-001", customer: "Budi Santoso", items: "2x Latte, 1x Croissant", total: "Rp 85.000", status: "Selesai" },
+    { id: "INV-002", customer: "Ani Wijaya", items: "1x Espresso", total: "Rp 25.000", status: "Diproses" },
+    { id: "INV-003", customer: "Rina Permata", items: "3x Cappuccino, 2x Sandwich", total: "Rp 145.000", status: "Selesai" },
+    { id: "INV-004", customer: "Doni Pratama", items: "1x Americano, 1x Muffin", total: "Rp 65.000", status: "Dibatalkan" }
   ];
 
   // Data feedback pelanggan

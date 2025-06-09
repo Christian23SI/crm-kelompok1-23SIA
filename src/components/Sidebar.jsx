@@ -10,6 +10,7 @@ LayoutDashboard,
   UserPlus,
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
+import Logo from '../assets/Logo.png';
 
 const menuItems = [
   { name: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
@@ -33,7 +34,7 @@ const Sidebar = () => {
 
   return (
     <aside className="bg-white w-64 h-screen shadow-lg px-4 py-6 hidden md:block">
-      <div className="text-xl font-bold mb-8 text-purple-700">CRM FORE COFFEE</div>
+      <div className="text-xl  mb-8 flex justify-center"><img src={Logo} alt="Logo" className='h-30 w-45 '/></div>
       <nav className="space-y-1">
         {menuItems.map((item) => (
           <Link
