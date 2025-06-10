@@ -1,15 +1,16 @@
+import { TimerIcon } from "lucide-react";
 import React, { useState } from "react";
 
 const initialCustomers = [
-  { id: 1, name: "Budi Santoso", email: "budi@mail.com", phone: "081234567890", active: true },
-  { id: 2, name: "Siti Aminah", email: "siti@mail.com", phone: "089876543210", active: false },
-  { id: 3, name: "Andi Wijaya", email: "andi@mail.com", phone: "081299988877", active: true },
+  { id: 1, name: "Budi Santoso", email: "budi@mail.com", phone: "081234567890", tier: 'Silver' },
+  { id: 2, name: "Siti Aminah", email: "siti@mail.com", phone: "089876543210", tier: 'Platinum' },
+  { id: 3, name: "Andi Wijaya", email: "andi@mail.com", phone: "081299988877", tier: 'Gold' },
 ];
 
 export default function CustomerManagement() {
   const [customers, setCustomers] = useState(initialCustomers);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", phone: "", active: true });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", tier: "" });
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -29,7 +30,7 @@ export default function CustomerManagement() {
       ...formData,
     };
     setCustomers([...customers, newCustomer]);
-    setFormData({ name: "", email: "", phone: "", active: true });
+    setFormData({ name: "", email: "", phone: "", tier: "" });
     setShowForm(false);
   };
 
@@ -85,16 +86,19 @@ export default function CustomerManagement() {
               placeholder="Nomor telepon"
             />
           </div>
-          <div className="flex items-center mb-4">
-            <input
-              type="checkbox"
-              name="active"
-              checked={formData.active}
+          <div className="mb-2">
+            <label className="block font-medium mb-1">Tier</label>
+            <select
+              name="tier"
+              value={formData.tier}
               onChange={handleInputChange}
-              id="activeCheckbox"
-              className="mr-2"
-            />
-            <label htmlFor="activeCheckbox" className="font-medium">Aktif</label>
+              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">Pilih Tier</option>
+              <option value="Silver">Silver</option>
+              <option value="Gold">Gold</option>
+              <option value="Platinum">Platinum</option>
+            </select>
           </div>
           <button
             onClick={handleAddCustomer}
@@ -123,15 +127,21 @@ export default function CustomerManagement() {
                 <td className="px-6 py-4 whitespace-nowrap">{cust.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{cust.phone}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {cust.active ? (
-                    <span className="inline-flex px-2 text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Aktif
-                    </span>
-                  ) : (
-                    <span className="inline-flex px-2 text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                      Tidak Aktif
-                    </span>
-                  )}
+                    {cust.tier === 'Silver' && (
+                      <span className="inline-flex px-2 text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-800">
+                        Silver
+                      </span>
+                    )}
+                    {cust.tier === 'Gold' && (
+                      <span className="inline-flex px-2 text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Gold
+                      </span>
+                    )}
+                    {cust.tier === 'Platinum' && (
+                      <span className="inline-flex px-2 text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        Platinum
+                      </span>
+                    )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center space-x-2">
                   <button
