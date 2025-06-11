@@ -15,7 +15,7 @@ import Logo from '../assets/Logo.png';
 const menuItems = [
   { name: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
   { name: 'Produk', icon: <Box />, path: '/produk' },
-  { name: 'Laporan', icon: <BarChart2 />, path: '/laporan' },
+  { name: 'Manajemen Inventaris', icon: <BarChart2 />, path: '/inventaris' },
   { name: 'Pelanggan', icon: <Users />, path: '/customermanagement' },
   { name: 'Penjualan', icon: <ShoppingCart />, path: '/penjualan' },
   { name: 'FAQ', icon: <Users />, path: '/faq' },
