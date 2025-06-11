@@ -13,6 +13,7 @@ import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import FAQ from './pages/FAQ'
 import ManajemenInventaris from './pages/ManajemenInventaris'
+import ManajemenFeedback from './pages/ManajemenFeedback'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -30,6 +31,7 @@ function App() {
         <Route path ='/signup' element={<SignUp/>} />
         <Route path='/faq' element={<FAQ />} />
         <Route path ='/inventaris' element={<ManajemenInventaris />} />
+        <Route path ='/feedback' element={<ManajemenFeedback />} />
         </Route>
       </Routes>
     </>

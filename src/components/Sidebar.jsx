@@ -8,6 +8,8 @@ LayoutDashboard,
   User,
   LogIn,
   UserPlus,
+  MessagesSquareIcon,
+  
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import Logo from '../assets/Logo.png';
@@ -19,6 +21,7 @@ const menuItems = [
   { name: 'Pelanggan', icon: <Users />, path: '/customermanagement' },
   { name: 'Penjualan', icon: <ShoppingCart />, path: '/penjualan' },
   { name: 'FAQ', icon: <Users />, path: '/faq' },
+  { name: 'Manajemen Feedback', icon: <MessagesSquareIcon />, path: '/feedback' },
 ]
 
 const accountItems = [
