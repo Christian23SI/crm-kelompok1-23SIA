@@ -153,7 +153,7 @@ export default function ProductManagement() {
               value={formData.category}
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded"
-              placeholder="Contoh: Coffee, Non-Coffee"
+              placeholder="Contoh: Coffee, Non-Coffee, Fore Deli"
             />
           </div>
           <div className="mb-2">
