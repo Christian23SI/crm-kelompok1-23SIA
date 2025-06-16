@@ -61,7 +61,7 @@ const FaqPage = () => {
   };
 
   return (
-    <div className="px-6 py-8 max-w-4xl mx-auto">
+    <div className="w-full py-8 px-6">
       <h2 className="text-3xl font-bold text-green-800 mb-6">Kelola FAQ</h2>
 
       <div className="bg-green-50 p-6 rounded-lg shadow mb-10">
@@ -135,9 +135,7 @@ const FaqPage = () => {
           }, {})
         ).map(([kategori, items]) => (
           <div key={kategori} className="mb-6">
-            <h4 className="text-lg font-bold text-green-700 mb-2">
-              {kategori}
-            </h4>
+            <h4 className="text-lg font-bold text-green-700 mb-2">{kategori}</h4>
             {items.map((faq) => (
               <div
                 key={faq.id}
