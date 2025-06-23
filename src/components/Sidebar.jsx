@@ -9,10 +9,12 @@ LayoutDashboard,
   LogIn,
   UserPlus,
   MessagesSquareIcon,
+  List,
   
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import Logo from '../assets/Logo.png';
+import { FiMail } from 'react-icons/fi';
 
 const menuItems = [
   { name: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
@@ -22,10 +24,12 @@ const menuItems = [
   { name: 'Penjualan', icon: <ShoppingCart />, path: '/penjualan' },
   { name: 'FAQ', icon: <Users />, path: '/faq' },
   { name: 'Manajemen Feedback', icon: <MessagesSquareIcon />, path: '/feedback' },
+  { name: 'Email Notification', icon: <FiMail />, path: '/email' },
 ]
 
 const accountItems = [
   { name: 'Pengaturan Akun', icon: <Settings />, path: '/akun' },
+  { name: 'List User', icon: <List />, path: '/user' },
   { name: 'Sign In', icon: <LogIn />, path: '/signin' },
   { name: 'Sign Up', icon: <UserPlus />, path: '/signup' },
 ]

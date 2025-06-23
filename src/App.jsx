@@ -14,6 +14,8 @@ import SignUp from './pages/SignUp'
 import FAQ from './pages/FAQ'
 import ManajemenInventaris from './pages/ManajemenInventaris'
 import ManajemenFeedback from './pages/ManajemenFeedback'
+import EmailNotification from './pages/EmailNotification'
+import User from './pages/ListUser'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -32,6 +34,8 @@ function App() {
         <Route path='/faq' element={<FAQ />} />
         <Route path ='/inventaris' element={<ManajemenInventaris />} />
         <Route path ='/feedback' element={<ManajemenFeedback />} />
+        <Route path ='/email' element={<EmailNotification />} />
+        <Route path ='/user' element={<User />} />
         </Route>
       </Routes>
     </>
