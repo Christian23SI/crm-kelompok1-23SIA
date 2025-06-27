@@ -3,8 +3,8 @@ import { Settings, Lock, Mail, User } from 'lucide-react';
 
 const AccountSetting = () => {
   const [formData, setFormData] = useState({
-    name: 'Admin',
-    email: 'Admin@gmail.com',
+    name: 'User',
+    email: 'User@gmail.com',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { User, Mail, Lock, Phone, Facebook, Github } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { User, Mail, Lock, Phone, Facebook } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ const SignUp = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,7 +23,7 @@ const SignUp = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = {};
     
@@ -34,9 +37,33 @@ const SignUp = () => {
       return;
     }
     
-    // Submit logic here
-    console.log('Sign up submitted:', formData);
-    // Redirect to account settings or dashboard
+    try {
+      setLoading(true);
+      
+      // Insert data ke tabel signup
+      const { data, error } = await supabase
+        .from('signup')
+        .insert([
+          {
+            username: formData.username,
+            email: formData.email,
+            phone: formData.phone,
+            password: formData.password // Note: Dalam produksi, password harus di-hash dulu
+          }
+        ])
+        .select();
+      
+      if (error) throw error;
+      
+      console.log('Sign up successful:', data);
+      navigate('/signin'); // Redirect ke halaman login setelah berhasil
+      
+    } catch (error) {
+      console.error('Sign up error:', error.message);
+      setErrors({ submit: error.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -142,9 +169,10 @@ const SignUp = () => {
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full py-2 px-4 bg-[#014c3b] text-white rounded-md hover:bg-[#014c3b] transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  disabled={loading}
+                  className="w-full py-2 px-4 bg-[#014c3b] text-white rounded-md hover:bg-[#014c3b] transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                 >
-                  Sign Up
+                  {loading ? 'Processing...' : 'Sign Up'}
                 </button>
               </div>
             </form>
@@ -173,7 +201,7 @@ const SignUp = () => {
                   type="button"
                   className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
-                <Mail className="h-5 w-5 text-blue-600" />
+                  <Mail className="h-5 w-5 text-blue-600" />
                 </button>
                 <button
                   type="button"

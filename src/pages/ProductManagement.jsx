@@ -1,37 +1,5 @@
 import React, { useState, useEffect } from "react";
-
-const initialProducts = [
-  {
-    id: 1,
-    name: "Iced Bumi Latte",
-    category: "Coffee",
-    stock: 10,
-    price: 24000,
-    active: true,
-    description: "The creamy and subtly sweet sensation of caramel and butterscotch sauce blends with authentic Indonesian coffee",
-    image: "https://static.fore.coffee/product/Bumi%20Latte%20w%20Badge.jpg",
-  },
-  {
-    id: 2,
-    name: "Matcha Ice Blended",
-    category: "Non-Coffee",
-    stock: 7,
-    price: 33000,
-    active: true,
-    description: "Fore Coffee's signature Creamy Matcha blend, fresh milk, with ice, just right to cool your day!",
-    image: "https://static.fore.coffee/product/matchablended173.jpg",
-  },
-  {
-    id: 3,
-    name: "Pain au Tiramisu",
-    category: "Fore-Deli",
-    stock: 7,
-    price: 36000,
-    active: true,
-    description: "Pastry with tiramisu flavoured almond paste and cocoa crumble topping",
-    image: "https://static.fore.coffee/product/Pain%20au%20Tiramisu.png",
-  },
-];
+import { supabase } from "../supabase"; // Sesuaikan dengan path Anda
 
 function formatCurrency(num) {
   return new Intl.NumberFormat("id-ID", {
@@ -42,7 +10,7 @@ function formatCurrency(num) {
 }
 
 export default function ProductManagement() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -57,9 +25,32 @@ export default function ProductManagement() {
   const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+
+  // Get products from Supabase
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error("Error fetching products:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   // Get unique categories for filter
-  const categories = ["All", ...new Set(initialProducts.map(p => p.category))];
+  const categories = ["All", ...new Set(products.map(p => p.category))];
 
   // Filter products
   const filteredProducts = products.filter(product => {
@@ -92,27 +83,45 @@ export default function ProductManagement() {
     setShowForm(false);
   };
 
-  const handleAddOrUpdate = () => {
+  const handleAddOrUpdate = async () => {
     if (!formData.name || !formData.category || !formData.stock || !formData.price || !formData.description || !formData.image) {
       alert("Please fill all required fields");
       return;
     }
 
-    const updatedProduct = {
-      ...formData,
+    const productData = {
+      name: formData.name,
+      category: formData.category,
       stock: parseInt(formData.stock),
       price: parseFloat(formData.price),
+      description: formData.description,
+      image: formData.image,
+      active: formData.active,
     };
 
-    if (isEditing) {
-      updatedProduct.id = editId;
-      setProducts(prev => prev.map(p => p.id === editId ? updatedProduct : p));
-    } else {
-      updatedProduct.id = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-      setProducts([...products, updatedProduct]);
-    }
+    try {
+      if (isEditing) {
+        const { error } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', editId);
 
-    resetForm();
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('products')
+          .insert([productData])
+          .select();
+
+        if (error) throw error;
+      }
+      
+      await fetchProducts();
+      resetForm();
+    } catch (error) {
+      console.error("Error saving product:", error.message);
+      alert("Failed to save product");
+    }
   };
 
   const handleEdit = (product) => {
@@ -126,17 +135,50 @@ export default function ProductManagement() {
     setShowForm(true);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      setProducts(products.filter(p => p.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error deleting product:", error.message);
+      alert("Failed to delete product");
     }
   };
 
-  const toggleProductStatus = (id) => {
-    setProducts(products.map(p =>
-      p.id === id ? { ...p, active: !p.active } : p
-    ));
+  const toggleProductStatus = async (id) => {
+    try {
+      const product = products.find(p => p.id === id);
+      const { error } = await supabase
+        .from('products')
+        .update({ active: !product.active })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error updating product status:", error.message);
+    }
   };
+
+  if (loading && products.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

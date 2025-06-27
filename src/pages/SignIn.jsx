@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Mail, Lock, Facebook, Github, FacebookIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Mail, Lock, Facebook } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,8 @@ const SignIn = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,7 +21,7 @@ const SignIn = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = {};
     
@@ -30,9 +33,52 @@ const SignIn = () => {
       return;
     }
     
-    // Submit logic here
-    console.log('Login submitted:', formData);
-    // Redirect to dashboard or account settings
+    try {
+      setLoading(true);
+      
+      // 1. Cari user di tabel signup berdasarkan username/email
+      const { data: userData, error: userError } = await supabase
+        .from('signup')
+        .select('*')
+        .or(`username.eq.${formData.username},email.eq.${formData.username}`)
+        .single();
+      
+      if (userError || !userData) {
+        throw new Error('Invalid username or email');
+      }
+      
+      // 2. Verifikasi password (dalam produksi seharusnya menggunakan hash)
+      if (userData.password !== formData.password) {
+        throw new Error('Invalid password');
+      }
+      
+      // 3. Simpan session (bisa disesuaikan dengan kebutuhan auth Anda)
+      // Dalam contoh ini kita simpan di localStorage
+      localStorage.setItem('auth', JSON.stringify({
+        user: {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          role: userData.role
+        },
+        token: 'dummy-token' // Dalam produksi gunakan token asli
+      }));
+      
+      console.log('Login successful:', userData);
+      
+      // 4. Redirect berdasarkan role
+      if (userData.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+      
+    } catch (error) {
+      console.error('Login error:', error.message);
+      setErrors({ submit: error.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,6 +90,12 @@ const SignIn = () => {
               <h1 className="text-3xl font-bold text-[#014c3b] mb-2">Welcome back!</h1>
               <p className="text-gray-600">Login to access your account</p>
             </div>
+
+            {errors.submit && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+                {errors.submit}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Username Field */}
@@ -99,9 +151,10 @@ const SignIn = () => {
               <div>
                 <button
                   type="submit"
-                  className="w-full py-2 px-4 bg-[#014c3b] text-white rounded-md hover:bg-[#014c3b] transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  disabled={loading}
+                  className="w-full py-2 px-4 bg-[#014c3b] text-white rounded-md hover:bg-[#014c3b] transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                 >
-                  Login
+                  {loading ? 'Logging in...' : 'Login'}
                 </button>
               </div>
             </form>
@@ -136,7 +189,7 @@ const SignIn = () => {
                   type="button"
                   className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
-                  <FacebookIcon className="h-5 w-5 text-gray-800" />
+                  <Facebook className="h-5 w-5 text-gray-800" />
                 </button>
               </div>
             </div>

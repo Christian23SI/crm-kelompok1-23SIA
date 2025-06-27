@@ -1,39 +1,35 @@
-import {
-  LayoutDashboard,
-  Users,
-  ShoppingCart,
-  Box,
-  BarChart2,
-  Settings,
-  User,
-  LogIn,
-  UserPlus,
+ import {
+LayoutDashboard,
+  Users,         // untuk pelanggan
+  ShoppingCart,  // untuk penjualan   // untuk laporan
+  Settings,      // untuk pengaturan akun
   MessagesSquareIcon,
-  List,
-  LogOut // Tambahkan icon logout dari lucide-react
+  LogOut,
+  MenuIcon,
+  Store
+  
 } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Logo from '../assets/Logo.png';
 import { FiMail } from 'react-icons/fi';
+import { BiNotification } from 'react-icons/bi';
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../pages/AuthContext'; // Import useAuth
 
 const menuItems = [
-  { name: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
-  { name: 'Produk', icon: <Box />, path: '/produk' },
-  { name: 'Manajemen Inventaris', icon: <BarChart2 />, path: '/inventaris' },
-  { name: 'Pelanggan', icon: <Users />, path: '/customermanagement' },
-  { name: 'Penjualan', icon: <ShoppingCart />, path: '/penjualan' },
-  { name: 'FAQ', icon: <Users />, path: '/faq' },
-  { name: 'Manajemen Feedback', icon: <MessagesSquareIcon />, path: '/feedback' },
-  { name: 'Email Notification', icon: <FiMail />, path: '/email' },
+  { name: 'Dashboard', icon: <LayoutDashboard />, path: '/dashboarduser' },
+  { name: 'Produk', icon: <Store />, path: '/produkuser' },
+  { name: 'Riwayat Pemesanan', icon: <ShoppingCart />, path: '/pemesananuser' },
+  { name: 'Saya', icon: <Users />, path: '/loyaltymanagement' },
+  { name: 'FAQ', icon: <Users />, path: '/faquser' },
+  { name: 'Feedback', icon: <MessagesSquareIcon />, path: '/feedbackuser' },
 ]
 
 const accountItems = [
-  { name: 'Pengaturan Akun', icon: <Settings />, path: '/akun' },
-  { name: 'List User', icon: <List />, path: '/user' },
+  { name: 'Pengaturan Akun', icon: <Settings />, path: '/akunuser' },
 ]
 
-const Sidebar = () => {
+const SidebarUser = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { logout } = useAuth() // Dapatkan fungsi logout dari context
@@ -104,4 +100,4 @@ const Sidebar = () => {
   )
 }
 
-export default Sidebar
+export default SidebarUser

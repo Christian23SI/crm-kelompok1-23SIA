@@ -1,69 +1,204 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "../supabase"; 
 
 const FaqPage = () => {
-  const [faqs, setFaqs] = useState([
-    {
-      id: 1,
-      kategori: "Masalah Akun",
-      pertanyaan: "Bagaimana cara reset password?",
-      jawaban: 'Klik "Lupa Password" di halaman login.',
-    },
-    {
-      id: 2,
-      kategori: "Masalah Akun",
-      pertanyaan: "Bagaimana cara mengubah email?",
-      jawaban: "Masuk ke pengaturan profil dan edit email.",
-    },
-    {
-      id: 3,
-      kategori: "Pembelian & Pembayaran",
-      pertanyaan: "Metode pembayaran apa saja yang tersedia?",
-      jawaban: "Kartu kredit, e-wallet, dan transfer bank.",
-    },
-  ]);
+  // State untuk data FAQ
+  const [faqs, setFaqs] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // State untuk form tambah FAQ
+  const [newFaq, setNewFaq] = useState({
+    kategori: "",
+    kategoriBaru: "",
+    pertanyaan: "",
+    jawaban: ""
+  });
 
-  const [kategoriTersedia, setKategoriTersedia] = useState([
-    "Masalah Akun",
-    "Pembelian & Pembayaran",
-    "Pengiriman",
-  ]);
+  // State untuk edit FAQ
+  const [editingId, setEditingId] = useState(null);
+  const [editFaq, setEditFaq] = useState({
+    kategori: "",
+    pertanyaan: "",
+    jawaban: ""
+  });
 
-  const [kategori, setKategori] = useState("");
-  const [kategoriBaru, setKategoriBaru] = useState("");
-  const [pertanyaan, setPertanyaan] = useState("");
-  const [jawaban, setJawaban] = useState("");
+  // Fetch data FAQ dari Supabase
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('faqs')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-  const handleAddFaq = () => {
-    const finalKategori = kategori === "baru" ? kategoriBaru.trim() : kategori;
+        if (error) throw error;
 
-    if (!finalKategori || !pertanyaan.trim() || !jawaban.trim()) return;
-
-    if (kategori === "baru" && !kategoriTersedia.includes(finalKategori)) {
-      setKategoriTersedia([...kategoriTersedia, finalKategori]);
-    }
-
-    const newFaq = {
-      id: faqs.length + 1,
-      kategori: finalKategori,
-      pertanyaan: pertanyaan.trim(),
-      jawaban: jawaban.trim(),
+        if (data) {
+          setFaqs(data);
+          // Ekstrak kategori unik
+          const uniqueCategories = [...new Set(data.map(faq => faq.kategori))];
+          setCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching FAQs:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setFaqs([...faqs, newFaq]);
-    setKategori("");
-    setKategoriBaru("");
-    setPertanyaan("");
-    setJawaban("");
+    fetchFaqs();
+  }, []);
+
+  // Handler untuk form tambah FAQ
+  const handleAddFaq = async () => {
+    const finalCategory = newFaq.kategori === "baru" 
+      ? newFaq.kategoriBaru.trim() 
+      : newFaq.kategori;
+
+    if (!finalCategory || !newFaq.pertanyaan.trim() || !newFaq.jawaban.trim()) {
+      alert("Semua field harus diisi!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Insert new FAQ ke Supabase
+      const { data, error } = await supabase
+        .from('faqs')
+        .insert([{
+          kategori: finalCategory,
+          pertanyaan: newFaq.pertanyaan.trim(),
+          jawaban: newFaq.jawaban.trim()
+        }])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Update state lokal
+        setFaqs([data[0], ...faqs]);
+        
+        // Update kategori jika baru
+        if (newFaq.kategori === "baru" && !categories.includes(finalCategory)) {
+          setCategories([...categories, finalCategory]);
+        }
+
+        // Reset form
+        setNewFaq({
+          kategori: "",
+          kategoriBaru: "",
+          pertanyaan: "",
+          jawaban: ""
+        });
+      }
+    } catch (error) {
+      console.error('Error adding FAQ:', error);
+      alert("Gagal menambahkan FAQ: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteFaq = (id) => {
-    setFaqs(faqs.filter((faq) => faq.id !== id));
+  // Handler untuk memulai edit FAQ
+  const startEdit = (faq) => {
+    setEditingId(faq.id);
+    setEditFaq({
+      kategori: faq.kategori,
+      pertanyaan: faq.pertanyaan,
+      jawaban: faq.jawaban
+    });
   };
+
+  // Handler untuk menyimpan perubahan edit
+  const handleUpdateFaq = async () => {
+    if (!editFaq.kategori || !editFaq.pertanyaan.trim() || !editFaq.jawaban.trim()) {
+      alert("Semua field harus diisi!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Update FAQ di Supabase
+      const { data, error } = await supabase
+        .from('faqs')
+        .update({
+          kategori: editFaq.kategori,
+          pertanyaan: editFaq.pertanyaan.trim(),
+          jawaban: editFaq.jawaban.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingId)
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Update state lokal
+        setFaqs(faqs.map(f => f.id === editingId ? data[0] : f));
+        setEditingId(null);
+        
+        // Update kategori jika baru
+        if (!categories.includes(editFaq.kategori)) {
+          setCategories([...categories, editFaq.kategori]);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating FAQ:', error);
+      alert("Gagal mengupdate FAQ: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler untuk membatalkan edit
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditFaq({
+      kategori: "",
+      pertanyaan: "",
+      jawaban: ""
+    });
+  };
+
+  // Handler untuk menghapus FAQ
+  const handleDeleteFaq = async (id) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus FAQ ini?')) return;
+    
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('faqs')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update state lokal
+      setFaqs(faqs.filter(faq => faq.id !== id));
+    } catch (error) {
+      console.error('Error deleting FAQ:', error);
+      alert('Gagal menghapus FAQ: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Kelompokkan FAQ berdasarkan kategori
+  const faqsByCategory = faqs.reduce((acc, faq) => {
+    if (!acc[faq.kategori]) acc[faq.kategori] = [];
+    acc[faq.kategori].push(faq);
+    return acc;
+  }, {});
 
   return (
     <div className="w-full py-8 px-6">
       <h2 className="text-3xl font-bold text-green-800 mb-6">Kelola FAQ</h2>
 
+      {/* Form Tambah FAQ */}
       <div className="bg-green-50 p-6 rounded-lg shadow mb-10">
         <h3 className="text-xl font-semibold text-green-800 mb-4">
           Tambah Pertanyaan Baru
@@ -73,27 +208,27 @@ const FaqPage = () => {
           <label className="block mb-1 text-sm text-gray-700">Kategori</label>
           <select
             className="w-full p-2 border rounded"
-            value={kategori}
-            onChange={(e) => setKategori(e.target.value)}
+            value={newFaq.kategori}
+            onChange={(e) => setNewFaq({...newFaq, kategori: e.target.value})}
+            disabled={loading}
           >
             <option value="">-- Pilih Kategori --</option>
-            {kategoriTersedia.map((item, index) => (
-              <option key={index} value={item}>
-                {item}
-              </option>
+            {categories.map((category, index) => (
+              <option key={index} value={category}>{category}</option>
             ))}
             <option value="baru">+ Tambahkan Kategori Baru</option>
           </select>
         </div>
 
-        {kategori === "baru" && (
+        {newFaq.kategori === "baru" && (
           <div className="mb-3">
             <input
               type="text"
               className="w-full p-2 border rounded"
               placeholder="Nama Kategori Baru"
-              value={kategoriBaru}
-              onChange={(e) => setKategoriBaru(e.target.value)}
+              value={newFaq.kategoriBaru}
+              onChange={(e) => setNewFaq({...newFaq, kategoriBaru: e.target.value})}
+              disabled={loading}
             />
           </div>
         )}
@@ -103,8 +238,9 @@ const FaqPage = () => {
             type="text"
             className="w-full p-2 border rounded"
             placeholder="Pertanyaan"
-            value={pertanyaan}
-            onChange={(e) => setPertanyaan(e.target.value)}
+            value={newFaq.pertanyaan}
+            onChange={(e) => setNewFaq({...newFaq, pertanyaan: e.target.value})}
+            disabled={loading}
           />
         </div>
 
@@ -112,50 +248,116 @@ const FaqPage = () => {
           <textarea
             className="w-full p-2 border rounded"
             placeholder="Jawaban"
-            value={jawaban}
-            onChange={(e) => setJawaban(e.target.value)}
+            value={newFaq.jawaban}
+            onChange={(e) => setNewFaq({...newFaq, jawaban: e.target.value})}
+            disabled={loading}
           />
         </div>
 
         <button
-          className="bg-green-800 hover:bg-green-900 text-white px-4 py-2 rounded shadow"
+          className={`px-4 py-2 rounded shadow ${loading ? 'bg-gray-400' : 'bg-green-800 hover:bg-green-900'} text-white`}
           onClick={handleAddFaq}
+          disabled={loading}
         >
-          Tambah FAQ
+          {loading ? 'Menambahkan...' : 'Tambah FAQ'}
         </button>
       </div>
 
+      {/* Daftar FAQ */}
       <div>
         <h3 className="text-xl font-semibold text-green-800 mb-4">Daftar FAQ</h3>
-        {Object.entries(
-          faqs.reduce((acc, faq) => {
-            if (!acc[faq.kategori]) acc[faq.kategori] = [];
-            acc[faq.kategori].push(faq);
-            return acc;
-          }, {})
-        ).map(([kategori, items]) => (
-          <div key={kategori} className="mb-6">
-            <h4 className="text-lg font-bold text-green-700 mb-2">{kategori}</h4>
-            {items.map((faq) => (
-              <div
-                key={faq.id}
-                className="bg-white p-4 rounded shadow border border-green-100 mb-3"
-              >
-                <p className="font-medium text-gray-800">{faq.pertanyaan}</p>
-                <p className="text-gray-600">{faq.jawaban}</p>
-                <div className="text-sm mt-2 space-x-3">
-                  <button className="text-green-700 hover:underline">Edit</button>
-                  <button
-                    className="text-red-600 hover:underline"
-                    onClick={() => handleDeleteFaq(faq.id)}
-                  >
-                    Hapus
-                  </button>
+        
+        {loading && faqs.length === 0 ? (
+          <div className="text-center py-10">Memuat data...</div>
+        ) : Object.entries(faqsByCategory).length === 0 ? (
+          <div className="text-center py-10">Belum ada FAQ</div>
+        ) : (
+          Object.entries(faqsByCategory).map(([category, items]) => (
+            <div key={category} className="mb-6">
+              <h4 className="text-lg font-bold text-green-700 mb-2">{category}</h4>
+              {items.map((faq) => (
+                <div key={faq.id} className="bg-white p-4 rounded shadow border border-green-100 mb-3">
+                  {editingId === faq.id ? (
+                    <div className="space-y-3">
+                      <select
+                        className="w-full p-2 border rounded"
+                        value={editFaq.kategori}
+                        onChange={(e) => setEditFaq({...editFaq, kategori: e.target.value})}
+                      >
+                        <option value="">-- Pilih Kategori --</option>
+                        {categories.map((cat, index) => (
+                          <option key={index} value={cat}>{cat}</option>
+                        ))}
+                        <option value="baru">+ Kategori Baru</option>
+                      </select>
+                      
+                      {editFaq.kategori === "baru" && (
+                        <input
+                          type="text"
+                          className="w-full p-2 border rounded"
+                          placeholder="Nama Kategori Baru"
+                          value={editFaq.kategori}
+                          onChange={(e) => setEditFaq({...editFaq, kategori: e.target.value})}
+                        />
+                      )}
+                      
+                      <input
+                        type="text"
+                        className="w-full p-2 border rounded"
+                        value={editFaq.pertanyaan}
+                        onChange={(e) => setEditFaq({...editFaq, pertanyaan: e.target.value})}
+                      />
+                      
+                      <textarea
+                        className="w-full p-2 border rounded"
+                        value={editFaq.jawaban}
+                        onChange={(e) => setEditFaq({...editFaq, jawaban: e.target.value})}
+                      />
+                      
+                      <div className="flex space-x-2">
+                        <button
+                          className="bg-green-600 text-white px-3 py-1 rounded"
+                          onClick={handleUpdateFaq}
+                          disabled={loading}
+                        >
+                          {loading ? 'Menyimpan...' : 'Simpan'}
+                        </button>
+                        <button
+                          className="bg-gray-500 text-white px-3 py-1 rounded"
+                          onClick={cancelEdit}
+                          disabled={loading}
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="font-medium text-gray-800">{faq.pertanyaan}</p>
+                      <p className="text-gray-600">{faq.jawaban}</p>
+                      <div className="text-sm mt-2 space-x-3">
+                        <button
+                          className="text-green-700 hover:underline"
+                          onClick={() => startEdit(faq)}
+                          disabled={loading}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-red-600 hover:underline"
+                          onClick={() => handleDeleteFaq(faq.id)}
+                          disabled={loading}
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-        ))}
+              ))}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
