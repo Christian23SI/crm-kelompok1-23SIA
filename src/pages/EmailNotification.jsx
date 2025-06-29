@@ -23,12 +23,12 @@ const PushNotificationPage = () => {
     push_enabled: false
   });
   const [recipientStats, setRecipientStats] = useState({
-    all: 0,
-    loyal: 0,
-    inactive: 0,
-    silver: 0,
-    gold: 0,
-    platinum: 0
+    all: 10000,
+    loyal: 2000,
+    inactive: 1500,
+    silver: 3000,
+    gold: 2000,
+    platinum: 1500
   });
 
   // UI states

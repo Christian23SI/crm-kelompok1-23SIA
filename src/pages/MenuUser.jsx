@@ -17,6 +17,8 @@ export default function MenuUser() {
   const [user, setUser] = useState(null);
   const [namaPemesan, setNamaPemesan] = useState("");
   const [notes, setNotes] = useState("");
+  const [showStockAlert, setShowStockAlert] = useState(false);
+  const [stockAlertMessage, setStockAlertMessage] = useState("");
   const navigate = useNavigate();
 
   // Fetch products
@@ -142,112 +144,113 @@ export default function MenuUser() {
     }
   };
 
-const placeOrder = async () => {
-  if (!tableNumber || !namaPemesan) {
-    alert("Harap masukkan nomor meja dan nama pemesan");
-    return;
-  }
-
-  if (cart.length === 0) {
-    alert("Keranjang belanja Anda kosong");
-    return;
-  }
-
-  try {
-    // 1. Verifikasi stok produk
-    for (const item of cart) {
-      const { data: product, error } = await supabase
-        .from('products')
-        .select('stock')
-        .eq('id', item.id)
-        .single();
-      
-      if (error) throw error;
-      if (product.stock < item.quantity) {
-        throw new Error(`Stok ${item.name} tidak mencukupi (tersedia: ${product.stock}, dibutuhkan: ${item.quantity})`);
-      }
+  const placeOrder = async () => {
+    if (!tableNumber || !namaPemesan) {
+      alert("Harap masukkan nomor meja dan nama pemesan");
+      return;
     }
 
-    // 2. Buat order
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        customer_id: user?.id,
-        nama_pemesan: namaPemesan,
-        table_number: tableNumber,
-        total_amount: subtotal,
-        discount_amount: discount,
-        final_amount: total,
-        payment_method: 'cashless',
-        voucher_code: voucher?.code,
-        notes: notes,
-        status: 'Processing'
-      })
-      .select()
-      .single();
-
-    if (orderError) throw orderError;
-
-    // 3. Buat order items
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(
-        cart.map(item => ({
-          order_id: order.id,
-          product_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          notes: item.notes || ''
-        }))
-      );
-
-    if (itemsError) throw itemsError;
-
-    // 4. Update stok produk menggunakan RPC
-    for (const item of cart) {
-      const { error: stockError } = await supabase
-        .rpc('decrement_stock', {
-          product_id: item.id,
-          quantity: item.quantity
-        });
-
-      if (stockError) throw stockError;
+    if (cart.length === 0) {
+      alert("Keranjang belanja Anda kosong");
+      return;
     }
 
-    // 5. Update voucher jika digunakan
-    if (voucher) {
-      const { error: voucherError } = await supabase
-        .rpc('increment_voucher_usage', {
-          voucher_code: voucher.code
-        });
-
-      if (voucherError) throw voucherError;
-    }
-
-    // Redirect ke halaman riwayat
-    navigate('/pemesananuser', {
-      state: { 
-        success: true,
-        orderId: order.id,
-        orderData: {
-          ...order,
-          items: cart
+    try {
+      // 1. Verifikasi stok produk
+      for (const item of cart) {
+        const { data: product, error } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.id)
+          .single();
+        
+        if (error) throw error;
+        if (product.stock < item.quantity) {
+          setStockAlertMessage(`Stok ${item.name} tidak mencukupi (tersedia: ${product.stock})`);
+          setShowStockAlert(true);
+          return;
         }
       }
-    });
 
-    // Reset state
-    setCart([]);
-    setShowCart(false);
-    setVoucher(null);
-    setVoucherCode("");
+      // 2. Buat order
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_id: user?.id,
+          nama_pemesan: namaPemesan,
+          table_number: tableNumber,
+          total_amount: subtotal,
+          discount_amount: discount,
+          final_amount: total,
+          payment_method: 'cashless',
+          voucher_code: voucher?.code,
+          notes: notes,
+          status: 'Processing'
+        })
+        .select()
+        .single();
 
-  } catch (error) {
-    console.error('Error:', error);
-    alert(`Pemesanan gagal: ${error.message}`);
-  }
-};
-    
+      if (orderError) throw orderError;
+
+      // 3. Buat order items
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(
+          cart.map(item => ({
+            order_id: order.id,
+            product_id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            notes: item.notes || ''
+          }))
+        );
+
+      if (itemsError) throw itemsError;
+
+      // 4. Update stok produk menggunakan RPC
+      for (const item of cart) {
+        const { error: stockError } = await supabase
+          .rpc('decrement_stock', {
+            product_id: item.id,
+            quantity: item.quantity
+          });
+
+        if (stockError) throw stockError;
+      }
+
+      // 5. Update voucher jika digunakan
+      if (voucher) {
+        const { error: voucherError } = await supabase
+          .rpc('increment_voucher_usage', {
+            voucher_code: voucher.code
+          });
+
+        if (voucherError) throw voucherError;
+      }
+
+      // Redirect ke halaman riwayat
+      navigate('/pemesananuser', {
+        state: { 
+          success: true,
+          orderId: order.id,
+          orderData: {
+            ...order,
+            items: cart
+          }
+        }
+      });
+
+      // Reset state
+      setCart([]);
+      setShowCart(false);
+      setVoucher(null);
+      setVoucherCode("");
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert(`Pemesanan gagal: ${error.message}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -573,6 +576,32 @@ const placeOrder = async () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Alert Modal */}
+      {showStockAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-red-600">Stok Tidak Mencukupi</h3>
+              <button 
+                onClick={() => setShowStockAlert(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="mb-4">{stockAlertMessage}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowStockAlert(false)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  Star, Gift, CheckCircle2, ShoppingBag, RefreshCw, X, 
-  ChevronRight, Gem, Award, Trophy, Zap, Coffee, Cake, 
+import {
+  Star, Gift, CheckCircle2, ShoppingBag, RefreshCw, X,
+  ChevronRight, Gem, Award, Trophy, Zap, Coffee, Cake,
   Clock, Mail, Smartphone, CalendarDays, CircleDollarSign
 } from 'lucide-react';
 
 const userData = {
   id: 1,
-  name: 'Budi Santoso',
-  email: 'budi@mail.com',
+  name: 'Abellia',
+  email: 'abel@mail.com',
   phone: '081234567890',
   tier: 'Gold',
   points: 1250,
@@ -128,7 +128,7 @@ export default function LoyaltyManagement() {
         </div>
 
         {/* User Profile Card */}
-        <div className="bg-gradient-to-r from-amber-500 to-yellow-600 rounded-2xl shadow-xl p-6 text-white mb-8 transform transition-all hover:shadow-2xl">
+        <div className="bg-gradient-to-r from-amber-500 to-yellow-600 rounded-2xl shadow-xl p-6 text-black mb-8 transform transition-all hover:shadow-2xl">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center mb-4 md:mb-0">
               <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm mr-4">
@@ -141,7 +141,7 @@ export default function LoyaltyManagement() {
                     <Trophy className="w-4 h-4 mr-1" />
                     {userData.tier} Member
                   </span>
-                  <span className="ml-3 text-yellow-100 text-sm flex items-center">
+                  <span className="ml-3 text-yellow-600 text-sm flex items-center">
                     <CalendarDays className="w-4 h-4 mr-1" />
                     Bergabung {formatDate(userData.joinDate)}
                   </span>
@@ -151,9 +151,9 @@ export default function LoyaltyManagement() {
             <div className="text-center md:text-right bg-white/10 p-3 rounded-lg">
               <p className="text-3xl font-bold flex items-center justify-center md:justify-end">
                 {userData.points.toLocaleString('id-ID')}
-                <span className="ml-2 text-yellow-100 text-lg">poin</span>
+                <span className="ml-2 text-yellow-600 text-lg">poin</span>
               </p>
-              <p className="text-yellow-100 text-sm flex items-center justify-center md:justify-end mt-1">
+              <p className="text-yellow-600 text-sm flex items-center justify-center md:justify-end mt-1">
                 <CircleDollarSign className="w-4 h-4 mr-1" />
                 1.5x poin untuk member Gold
               </p>
@@ -166,33 +166,36 @@ export default function LoyaltyManagement() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <RefreshCw className="w-5 h-5 mr-2 text-amber-500" />
-              Progress Menuju Tier {nextTier.name}
+              Progress Menuju Tier Platinum
             </h3>
             <span className="text-sm font-medium text-amber-600">
-              {Math.round(progressToNextTier)}% tercapai
+              42% tercapai
             </span>
           </div>
-          
+
           <div className="mb-2 flex justify-between text-sm text-gray-600">
             <span className="flex items-center">
               <span className="w-3 h-3 rounded-full bg-amber-400 mr-2"></span>
-              {userData.tier} ({userData.points} poin)
+              Gold (1250 poin)
             </span>
             <span className="flex items-center">
               <span className="w-3 h-3 rounded-full bg-gray-300 mr-2"></span>
-              {nextTier.name} ({nextTier.pointsRequired} poin)
+              Platinum (3000 poin)
             </span>
           </div>
-          
+
           <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-            <div 
-              className="bg-gradient-to-r from-amber-400 to-yellow-500 h-3 rounded-full" 
-              style={{ width: `${progressToNextTier}%` }}
+            <div
+              className="h-3 rounded-full"
+              style={{
+                width: '42%',
+                background: 'linear-gradient(to right, #fbbf24, #d97706)'
+              }}
             ></div>
           </div>
-          
+
           <p className="text-sm text-gray-500">
-            Butuh <span className="font-medium">{nextTier.pointsRequired - userData.points}</span> poin lagi untuk mencapai tier {nextTier.name}
+            Butuh <span className="font-medium">1750</span> poin lagi untuk mencapai tier Platinum
           </p>
         </div>
 
@@ -257,8 +260,8 @@ export default function LoyaltyManagement() {
                         <button
                           onClick={() => handleClaimReward(reward)}
                           disabled={userData.points < reward.pointsRequired}
-                          className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center ${userData.points >= reward.pointsRequired ? 
-                            'bg-amber-500 hover:bg-amber-600 text-white' : 
+                          className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center ${userData.points >= reward.pointsRequired ?
+                            'bg-amber-500 hover:bg-amber-600 text-white' :
                             'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                         >
                           Klaim Sekarang
@@ -360,15 +363,15 @@ export default function LoyaltyManagement() {
             </h3>
             <div className="space-y-4">
               {tiers.map((tier, index) => (
-                <div 
-                  key={tier.name} 
-                  className={`border rounded-xl p-5 transition-all ${userData.tier === tier.name ? 
-                    'border-amber-300 bg-amber-50 shadow-sm' : 
+                <div
+                  key={tier.name}
+                  className={`border rounded-xl p-5 transition-all ${userData.tier === tier.name ?
+                    'border-amber-300 bg-amber-50 shadow-sm' :
                     'border-gray-200 hover:border-gray-300'}`}
                 >
                   <div className="flex items-center">
-                    <div className={`p-3 rounded-lg mr-4 ${userData.tier === tier.name ? 
-                      'bg-amber-100 text-amber-600' : 
+                    <div className={`p-3 rounded-lg mr-4 ${userData.tier === tier.name ?
+                      'bg-amber-100 text-amber-600' :
                       'bg-gray-100 text-gray-500'}`}
                     >
                       {tier.icon}
@@ -417,9 +420,9 @@ export default function LoyaltyManagement() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <p className="mb-4 text-gray-600">Anda akan menukarkan poin untuk reward berikut:</p>
-            
+
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
               <div className="flex items-start">
                 <div className="bg-amber-100 p-2 rounded-lg mr-3">
@@ -440,7 +443,7 @@ export default function LoyaltyManagement() {
                 </span>
               </div>
             </div>
-            
+
             <div className="bg-gray-50 p-3 rounded-lg mb-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Poin Anda:</span>
@@ -453,7 +456,7 @@ export default function LoyaltyManagement() {
                 </span>
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowClaimModal(false)}
@@ -484,7 +487,7 @@ export default function LoyaltyManagement() {
             <p className="text-gray-600 mb-4">
               Anda telah berhasil menukarkan poin untuk reward <span className="font-medium">{selectedReward.name}</span>.
             </p>
-            
+
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-left">
               <div className="flex items-center text-green-800">
                 <Mail className="w-5 h-5 mr-2 flex-shrink-0" />
@@ -495,7 +498,7 @@ export default function LoyaltyManagement() {
                 <span>Juga tersedia di halaman Riwayat Pembelian</span>
               </div>
             </div>
-            
+
             <button
               onClick={() => setShowSuccessModal(false)}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg w-full transition-colors"

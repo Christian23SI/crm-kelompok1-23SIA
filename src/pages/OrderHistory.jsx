@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { Clock, CheckCircle, XCircle, ShoppingBag, ArrowLeft, Printer } from "lucide-react";
-import { useParams, Link } from "react-router-dom";
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  ShoppingBag,
+  ArrowLeft,
+  Printer,
+  RotateCw,
+} from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [reordering, setReordering] = useState(false);
   const { orderId } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserAndOrders = async () => {
@@ -20,6 +30,7 @@ export default function OrderHistory() {
           .from('orders')
           .select(`
             id,
+            customer_id,
             nama_pemesan,
             table_number,
             order_date,
@@ -31,9 +42,13 @@ export default function OrderHistory() {
             voucher_code,
             notes,
             order_items:order_items(
+              id,
               quantity,
               price,
+              notes,
+              product_id,
               products:products(
+                id,
                 name,
                 image,
                 category
@@ -54,6 +69,7 @@ export default function OrderHistory() {
         setOrders(orderId ? [data] : data);
       } catch (error) {
         console.error("Error fetching orders:", error.message);
+        alert("Gagal memuat riwayat pesanan");
       } finally {
         setLoading(false);
       }
@@ -64,19 +80,74 @@ export default function OrderHistory() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'processing': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'Completed': return 'bg-green-100 text-green-800';
+      case 'Processing': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="text-green-500 mr-1" size={18} />;
-      case 'processing': return <Clock className="text-yellow-500 mr-1" size={18} />;
-      case 'cancelled': return <XCircle className="text-red-500 mr-1" size={18} />;
+      case 'Completed': return <CheckCircle className="text-green-500 mr-1" size={18} />;
+      case 'Processing': return <Clock className="text-yellow-500 mr-1" size={18} />;
       default: return <Clock className="text-gray-500 mr-1" size={18} />;
+    }
+  };
+
+  const handleReorder = async (oldOrder) => {
+    if (!window.confirm(`Anda yakin ingin memesan ulang order #${oldOrder.id}?`)) {
+      return;
+    }
+
+    try {
+      setReordering(true);
+      
+      // Buat order baru berdasarkan order lama
+      const newOrder = {
+        customer_id: user?.id || null,
+        table_number: oldOrder.table_number,
+        nama_pemesan: oldOrder.nama_pemesan,
+        total_amount: oldOrder.total_amount,
+        discount_amount: oldOrder.discount_amount,
+        final_amount: oldOrder.final_amount,
+        payment_method: oldOrder.payment_method,
+        voucher_code: oldOrder.voucher_code,
+        notes: `Re-order dari pesanan #${oldOrder.id}`,
+        status: 'Processing'
+      };
+
+      // Insert order baru ke database
+      const { data: insertedOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert(newOrder)
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Siapkan order items untuk diinsert
+      const orderItems = oldOrder.order_items.map(item => ({
+        order_id: insertedOrder.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: item.price,
+        notes: item.notes
+      }));
+
+      // Insert order items
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      alert("Pesanan berhasil dibuat ulang!");
+      navigate(`/pemesananuser`);
+    } catch (error) {
+      console.error("Error reordering:", error.message);
+      alert("Gagal membuat pesanan ulang: " + error.message);
+    } finally {
+      setReordering(false);
     }
   };
 
@@ -102,8 +173,7 @@ export default function OrderHistory() {
         </head>
         <body>
           <div class="header">
-            <h2>Fore Coffee</h2>
-            <p>Jl. Coffee Street No. 123</p>
+            <h2>Restoran Anda</h2>
             <p>${new Date(order.order_date).toLocaleString('id-ID')}</p>
           </div>
           
@@ -112,7 +182,7 @@ export default function OrderHistory() {
             <p><strong>Customer:</strong> ${order.nama_pemesan}</p>
             <p><strong>Table:</strong> ${order.table_number}</p>
             <p><strong>Status:</strong> 
-              <span class="status ${order.status}">${order.status}</span>
+              <span class="status ${order.status.toLowerCase()}">${order.status}</span>
             </p>
           </div>
           
@@ -196,10 +266,10 @@ export default function OrderHistory() {
           )}
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {orderId ? 'Order Details' : 'Order History'}
+              {orderId ? 'Detail Pesanan' : 'Riwayat Pesanan'}
             </h1>
             <p className="text-gray-500">
-              {orderId ? 'Details of your order' : 'Your past orders'}
+              {orderId ? "Detail pesanan Anda" : "Daftar pesanan sebelumnya"}
             </p>
           </div>
         </div>
@@ -210,9 +280,9 @@ export default function OrderHistory() {
         {orders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <ShoppingBag className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No orders found</h3>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">Tidak ada pesanan</h3>
             <p className="mt-1 text-gray-500">
-              {user ? "You haven't placed any orders yet." : "Please sign in to view your orders."}
+              {user ? "Anda belum memiliki pesanan" : "Silakan masuk untuk melihat riwayat pesanan"}
             </p>
             {!user && (
               <div className="mt-6">
@@ -220,7 +290,7 @@ export default function OrderHistory() {
                   to="/signin"
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
-                  Sign In
+                  Masuk
                 </Link>
               </div>
             )}
@@ -235,7 +305,7 @@ export default function OrderHistory() {
                     {getStatusIcon(order.status)}
                     <div>
                       <h2 className="text-lg font-medium text-gray-900">
-                        Order #{order.id}
+                        Pesanan #${order.id}
                       </h2>
                       <p className="text-sm text-gray-500">
                         {new Date(order.order_date).toLocaleString('id-ID')}
@@ -256,20 +326,20 @@ export default function OrderHistory() {
                 <div className="px-6 py-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-2">Customer Name</h3>
+                      <h3 className="text-sm font-medium text-gray-500 mb-2">Nama Pemesan</h3>
                       <p className="text-sm text-gray-900">{order.nama_pemesan}</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-2">Table Number</h3>
+                      <h3 className="text-sm font-medium text-gray-500 mb-2">Nomor Meja</h3>
                       <p className="text-sm text-gray-900">{order.table_number}</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-2">Payment Method</h3>
+                      <h3 className="text-sm font-medium text-gray-500 mb-2">Metode Pembayaran</h3>
                       <p className="text-sm text-gray-900 capitalize">{order.payment_method}</p>
                     </div>
                     {order.voucher_code && (
                       <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-2">Voucher Code</h3>
+                        <h3 className="text-sm font-medium text-gray-500 mb-2">Kode Voucher</h3>
                         <p className="text-sm text-gray-900">{order.voucher_code}</p>
                       </div>
                     )}
@@ -277,13 +347,13 @@ export default function OrderHistory() {
 
                   {order.notes && (
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-gray-500 mb-2">Notes</h3>
+                      <h3 className="text-sm font-medium text-gray-500 mb-2">Catatan</h3>
                       <p className="text-sm text-gray-900">{order.notes}</p>
                     </div>
                   )}
 
                   {/* Order Items */}
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Items Ordered</h3>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Item Pesanan</h3>
                   <div className="space-y-4">
                     {order.order_items.map((item, index) => (
                       <div key={index} className="flex items-start border-b pb-4">
@@ -301,7 +371,7 @@ export default function OrderHistory() {
                         <div className="ml-4 flex-1">
                           <div className="flex justify-between">
                             <h3 className="text-sm font-medium text-gray-900">
-                              {item.products?.name || 'Unknown Product'}
+                              {item.products?.name || 'Produk tidak diketahui'}
                             </h3>
                             <p className="ml-4 text-sm font-medium text-gray-900">
                               Rp{(item.price * item.quantity).toLocaleString('id-ID')}
@@ -313,6 +383,11 @@ export default function OrderHistory() {
                               {item.quantity} × Rp{item.price.toLocaleString('id-ID')}
                             </span>
                           </div>
+                          {item.notes && (
+                            <div className="mt-1">
+                              <p className="text-xs text-gray-500">Catatan: {item.notes}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -328,7 +403,7 @@ export default function OrderHistory() {
                     </div>
                     {order.discount_amount > 0 && (
                       <div className="flex justify-between mt-1">
-                        <span className="text-sm text-gray-600">Discount</span>
+                        <span className="text-sm text-gray-600">Diskon</span>
                         <span className="text-sm font-medium text-green-600">
                           -Rp{order.discount_amount.toLocaleString('id-ID')}
                         </span>
@@ -340,6 +415,27 @@ export default function OrderHistory() {
                         Rp{order.final_amount.toLocaleString('id-ID')}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Order Actions */}
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                      onClick={() => handleReorder(order)}
+                      disabled={reordering}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50"
+                    >
+                      {reordering ? (
+                        <>
+                          <RotateCw className="mr-2 animate-spin" size={18} />
+                          Memproses...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCw className="mr-2" size={18} />
+                          Pesan Ulang
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>

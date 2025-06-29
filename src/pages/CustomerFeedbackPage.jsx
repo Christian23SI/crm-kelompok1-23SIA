@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FaChevronDown,
   FaChevronUp,
@@ -6,108 +6,173 @@ import {
   FaTimesCircle,
   FaStar
 } from 'react-icons/fa';
-
+import { supabase } from '../supabase';
+import Loading from '../components/Loading';
 
 const CustomerFeedbackPage = () => {
-  const [activeTab, setActiveTab] = useState('new');
-  const [expandedFeedback, setExpandedFeedback] = useState(null);
+  // State untuk form feedback
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  
+  // State untuk manajemen feedback
+  const [activeTab, setActiveTab] = useState('new');
+  const [expandedFeedback, setExpandedFeedback] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [feedbacks, setFeedbacks] = useState([]);
+  
+  // State untuk loading dan error
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Mock data feedback yang sudah dikirim
-  const myFeedbacks = [
-    {
-      id: 1,
-      rating: 5,
-      comment: "Kopinya enak banget! Pelayanan juga ramah.",
-      date: "2023-05-20",
-      responses: [
-        {
-          id: 1,
-          message: "Terima kasih atas rating 5 bintang! Kami sangat senang Anda menikmati kopi dan pelayanan kami.",
-          date: "2023-05-20",
-          staffName: "Tim Fore Coffee"
-        }
-      ],
-      status: "completed"
-    },
-    {
-      id: 2,
-      rating: 3,
-      comment: "Rasanya cukup enak tapi tempatnya terlalu ramai.",
-      date: "2023-05-18",
-      responses: [
-        {
-          id: 1,
-          message: "Terima kasih atas feedback 3 bintang Anda. Kami akan berusaha meningkatkan pelayanan kami.",
-          date: "2023-05-18",
-          staffName: "Tim Fore Coffee"
-        },
-        {
-          id: 2,
-          message: "Halo, terima kasih atas masukannya. Kami sedang mempertimbangkan perluasan tempat untuk kenyamanan pelanggan.",
-          date: "2023-05-19",
-          staffName: "Ahmad - Customer Service"
-        }
-      ],
-      status: "in-progress"
-    },
-    {
-      id: 3,
-      rating: 1,
-      comment: "Pesanan saya salah dan pelayannya lambat!",
-      date: "2023-05-15",
-      responses: [
-        {
-          id: 1,
-          message: "Kami sangat menyesal mendengar pengalaman Anda. Tim kami akan segera menindaklanjuti keluhan ini.",
-          date: "2023-05-15",
-          staffName: "Tim Fore Coffee"
-        },
-        {
-          id: 2,
-          message: "Halo, mohon maaf atas ketidaknyamanan. Kami telah memberikan voucher gratis sebagai kompensasi. Mohon cek email Anda.",
-          date: "2023-05-16",
-          staffName: "Rina - Manajer"
-        }
-      ],
-      status: "completed"
+  // Fetch feedback dari database
+  const fetchFeedbacks = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('feedbacks')
+        .select(`
+          id,
+          customer_name,
+          email,
+          rating,
+          comment,
+          created_at,
+          resolved,
+          feedback_responses (
+            id,
+            message,
+            created_at,
+            response_type,
+            staff_name,
+            staff_role
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedData = data.map(feedback => ({
+        ...feedback,
+        status: feedback.resolved ? 'completed' : 'in-progress',
+        responses: feedback.feedback_responses || []
+      }));
+
+      setFeedbacks(formattedData);
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+      setError('Gagal memuat daftar feedback');
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const filteredFeedbacks = activeTab === 'all' 
-    ? myFeedbacks 
-    : myFeedbacks.filter(fb => 
-        activeTab === 'new' ? fb.status === 'in-progress' : fb.status === 'completed'
-      );
-
-  const handleSubmitFeedback = (e) => {
-    e.preventDefault();
-    if (rating === 0 || !feedbackText.trim()) return;
-    
-    // Simpan feedback ke state atau kirim ke API
-    const newFeedback = {
-      id: Date.now(),
-      rating,
-      comment: feedbackText,
-      date: new Date().toISOString().split('T')[0],
-      responses: [],
-      status: "in-progress"
-    };
-    
-    // Dalam implementasi nyata, ini akan diupdate ke state/API
-    console.log("Feedback submitted:", newFeedback);
-    setSubmitted(true);
-    setRating(0);
-    setFeedbackText('');
   };
 
+  useEffect(() => {
+    fetchFeedbacks();
+  }, []);
+
+  // Filter feedback berdasarkan tab aktif
+  const filteredFeedbacks = activeTab === 'all' 
+    ? feedbacks 
+    : feedbacks.filter(fb => 
+        activeTab === 'new' ? !fb.resolved : fb.resolved
+      );
+
+  // Handle submit feedback
+  const handleSubmitFeedback = async (e) => {
+    e.preventDefault();
+    setError(null);
+    
+    // Validasi input
+    if (rating === 0 || !feedbackText.trim() || !customerName.trim() || !customerEmail.trim()) {
+      setError('Harap lengkapi semua field yang wajib diisi');
+      return;
+    }
+
+    // Validasi format email
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      setError('Format email tidak valid');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Insert data ke tabel feedbacks
+      const { data: feedback, error: feedbackError } = await supabase
+        .from('feedbacks')
+        .insert([{
+          customer_name: customerName,
+          email: customerEmail,
+          rating,
+          comment: feedbackText
+        }])
+        .select()
+        .single();
+
+      if (feedbackError) throw feedbackError;
+
+      // Insert auto response ke tabel feedback_responses
+      const { error: responseError } = await supabase
+        .from('feedback_responses')
+        .insert({
+          feedback_id: feedback.id,
+          message: getAutoResponse(rating),
+          response_type: 'auto'
+        });
+
+      if (responseError) throw responseError;
+
+      // Reset form setelah sukses
+      setSubmitted(true);
+      setRating(0);
+      setFeedbackText('');
+      setCustomerName('');
+      setCustomerEmail('');
+      
+      // Refresh daftar feedback
+      await fetchFeedbacks();
+
+    } catch (error) {
+      console.error('Error details:', error);
+      
+      let errorMessage = 'Gagal mengirim feedback';
+      if (error.message.includes('violates check constraint')) {
+        errorMessage = 'Rating harus antara 1-5';
+      } else if (error.message.includes('null value in column')) {
+        errorMessage = 'Harap lengkapi semua field yang wajib diisi';
+      } else if (error.message.includes('network error')) {
+        errorMessage = 'Koneksi jaringan bermasalah. Silakan coba lagi.';
+      } else {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto response berdasarkan rating
+  const getAutoResponse = (rating) => {
+    const responses = {
+      1: "Kami sangat menyesal mendengar pengalaman Anda. Tim kami akan segera menindaklanjuti keluhan ini.",
+      2: "Kami memohon maaf atas ketidakpuasan Anda. Kami akan memperbaiki pelayanan kami.",
+      3: "Terima kasih atas feedback 3 bintang Anda. Kami akan berusaha meningkatkan pelayanan kami.",
+      4: "Terima kasih atas rating 4 bintang! Kami senang Anda menikmati pengalaman di Fore Coffee.",
+      5: "Terima kasih atas rating 5 bintang! Kami sangat senang Anda menikmati kopi dan pelayanan kami."
+    };
+    return responses[rating];
+  };
+
+  // Toggle expand/collapse feedback
   const toggleFeedback = (id) => {
     setExpandedFeedback(expandedFeedback === id ? null : id);
   };
 
+  // Komponen badge status
   const getStatusBadge = (status) => {
     const statusClasses = {
       'in-progress': 'bg-yellow-100 text-yellow-800',
@@ -126,6 +191,7 @@ const CustomerFeedbackPage = () => {
     );
   };
 
+  // Komponen bintang rating
   const renderStars = (rating) => {
     return Array(5).fill(0).map((_, i) => (
       <FaStar 
@@ -135,13 +201,25 @@ const CustomerFeedbackPage = () => {
     ));
   };
 
+  // Tampilkan loading jika sedang fetch data
+  if (loading && !submitted) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 flex justify-center items-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900">Feedback Pelanggan</h1>
-          <p className="text-lg text-gray-600">Bagikan pengalaman Anda dengan Fore Coffee</p>
+          <p className="text-lg text-gray-600">Bagikan pengalaman Anda dengan kami</p>
         </div>
 
         {/* Feedback Form */}
@@ -149,9 +227,50 @@ const CustomerFeedbackPage = () => {
           <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Kirim Feedback Baru</h2>
             
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg">
+                <p className="font-medium">Gagal mengirim feedback:</p>
+                <p>{error}</p>
+                <button 
+                  onClick={() => setError(null)}
+                  className="mt-2 text-sm underline"
+                >
+                  Tutup
+                </button>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmitFeedback}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Anda*</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="Nama lengkap"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email*</label>
+                  <input
+                    type="email"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="Alamat email Anda"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    required
+                  />
+                  {customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail) && (
+                    <p className="mt-1 text-sm text-red-600">Format email tidak valid</p>
+                  )}
+                </div>
+              </div>
+              
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rating*</label>
                 <div className="flex items-center">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -174,7 +293,7 @@ const CustomerFeedbackPage = () => {
               </div>
               
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ulasan Anda</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ulasan Anda*</label>
                 <textarea
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -188,10 +307,24 @@ const CustomerFeedbackPage = () => {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={rating === 0 || !feedbackText.trim()}
-                  className={`px-6 py-3 rounded-lg font-medium ${rating === 0 || !feedbackText.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                  disabled={rating === 0 || !feedbackText.trim() || !customerName.trim() || !customerEmail.trim() || loading}
+                  className={`px-6 py-3 rounded-lg font-medium flex items-center ${
+                    rating === 0 || !feedbackText.trim() || !customerName.trim() || !customerEmail.trim() || loading
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
                 >
-                  Kirim Feedback
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Mengirim...
+                    </>
+                  ) : (
+                    'Kirim Feedback'
+                  )}
                 </button>
               </div>
             </form>
@@ -206,15 +339,18 @@ const CustomerFeedbackPage = () => {
               Kami sangat menghargai masukan Anda. Tim kami akan meninjau feedback ini dan memberikan tanggapan jika diperlukan.
             </p>
             <button
-              onClick={() => setSubmitted(false)}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+              onClick={() => {
+                setSubmitted(false);
+                fetchFeedbacks();
+              }}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center mx-auto"
             >
               Kirim Feedback Lagi
             </button>
           </div>
         )}
 
-        {/* My Feedbacks */}
+        {/* Feedbacks List */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
@@ -254,7 +390,17 @@ const CustomerFeedbackPage = () => {
                       </div>
                       <div>
                         <p className="text-gray-800 font-medium line-clamp-1">{feedback.comment}</p>
-                        <p className="text-sm text-gray-500">{feedback.date}</p>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <span>{feedback.customer_name}</span>
+                          <span>•</span>
+                          <span>
+                            {new Date(feedback.created_at).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -270,8 +416,14 @@ const CustomerFeedbackPage = () => {
                   {expandedFeedback === feedback.id && (
                     <div className="px-4 pb-4 animate-fade-in">
                       <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                        <p className="text-gray-800">{feedback.comment}</p>
-                        <div className="mt-2 flex items-center">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-medium text-gray-800">{feedback.customer_name}</h3>
+                          {feedback.email && (
+                            <span className="text-sm text-gray-500">{feedback.email}</span>
+                          )}
+                        </div>
+                        <p className="text-gray-800 mb-3">{feedback.comment}</p>
+                        <div className="flex items-center">
                           {renderStars(feedback.rating)}
                           <span className="ml-2 text-sm text-gray-500">{feedback.rating} bintang</span>
                         </div>
@@ -279,13 +431,31 @@ const CustomerFeedbackPage = () => {
                       
                       {feedback.responses.length > 0 ? (
                         <div>
-                          <h4 className="font-medium text-gray-700 mb-3">Tanggapan dari Fore Coffee</h4>
+                          <h4 className="font-medium text-gray-700 mb-3">Tanggapan dari Kami</h4>
                           <div className="space-y-3">
                             {feedback.responses.map(response => (
-                              <div key={response.id} className="bg-green-50 border border-green-100 p-4 rounded-lg">
+                              <div 
+                                key={response.id} 
+                                className={`p-4 rounded-lg ${
+                                  response.response_type === 'auto' 
+                                    ? 'bg-green-50 border border-green-100' 
+                                    : 'bg-blue-50 border border-blue-100'
+                                }`}
+                              >
                                 <div className="flex justify-between items-start mb-1">
-                                  <div className="font-medium text-gray-800">{response.staffName}</div>
-                                  <div className="text-sm text-gray-500">{response.date}</div>
+                                  <div className="font-medium text-gray-800">
+                                    {response.response_type === 'auto' 
+                                      ? 'Tim Fore Coffee' 
+                                      : response.staff_name || ''}
+                                    {response.staff_role && ` (${response.staff_role})`}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {new Date(response.created_at).toLocaleDateString('id-ID', {
+                                      day: 'numeric',
+                                      month: 'long',
+                                      year: 'numeric'
+                                    })}
+                                  </div>
                                 </div>
                                 <p className="text-gray-700">{response.message}</p>
                               </div>
@@ -309,7 +479,7 @@ const CustomerFeedbackPage = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-1">
                   {activeTab === 'new' ? 'Tidak ada feedback aktif' : 'Tidak ada feedback selesai'}
                 </h3>
-                <p className="text-gray-500">Anda belum memiliki feedback pada kategori ini</p>
+                <p className="text-gray-500">Belum ada feedback pada kategori ini</p>
               </div>
             )}
           </div>

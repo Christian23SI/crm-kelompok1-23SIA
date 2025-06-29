@@ -1,80 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiStar, FiMessageSquare,FiSearch, FiUser, FiMail, FiThumbsUp, FiThumbsDown, FiSend } from 'react-icons/fi';
+import { FiStar, FiMessageSquare, FiSearch, FiUser, FiMail, FiThumbsUp, FiThumbsDown, FiSend } from 'react-icons/fi';
+import { supabase } from '../supabase';
 
 const FeedbackSystem = () => {
-  // Data feedback contoh
-  const initialFeedbacks = [
-    {
-      id: 1,
-      customerName: "Budi Santoso",
-      email: "budi@example.com",
-      rating: 5,
-      comment: "Kopinya enak banget! Pelayanan juga ramah.",
-      date: "2023-05-20",
-      responses: [
-        {
-          id: 1,
-          type: "auto",
-          message: "Terima kasih atas rating 5 bintang! Kami sangat senang Anda menikmati kopi dan pelayanan kami.",
-          date: "2023-05-20"
-        }
-      ],
-      resolved: true
-    },
-    {
-      id: 2,
-      customerName: "Ani Wijaya",
-      email: "ani@example.com",
-      rating: 3,
-      comment: "Rasanya cukup enak tapi tempatnya terlalu ramai.",
-      date: "2023-05-18",
-      responses: [
-        {
-          id: 1,
-          type: "auto",
-          message: "Terima kasih atas feedback 3 bintang Anda. Kami akan berusaha meningkatkan pelayanan kami.",
-          date: "2023-05-18"
-        },
-        {
-          id: 2,
-          type: "manual",
-          message: "Halo Ani, terima kasih atas masukannya. Kami sedang mempertimbangkan perluasan tempat untuk kenyamanan pelanggan.",
-          date: "2023-05-19",
-          staffName: "Ahmad",
-          staffRole: "Customer Service"
-        }
-      ],
-      resolved: false
-    },
-    {
-      id: 3,
-      customerName: "Citra Dewi",
-      email: "citra@example.com",
-      rating: 1,
-      comment: "Pesanan saya salah dan pelayannya lambat!",
-      date: "2023-05-15",
-      responses: [
-        {
-          id: 1,
-          type: "auto",
-          message: "Kami sangat menyesal mendengar pengalaman Anda. Tim kami akan segera menindaklanjuti keluhan ini.",
-          date: "2023-05-15"
-        },
-        {
-          id: 2,
-          type: "manual",
-          message: "Halo Citra, mohon maaf atas ketidaknyamanan. Kami telah memberikan voucher gratis sebagai kompensasi. Mohon cek email Anda.",
-          date: "2023-05-16",
-          staffName: "Rina",
-          staffRole: "Manajer"
-        }
-      ],
-      resolved: true
-    }
-  ];
-
-  // State management
-  const [feedbacks, setFeedbacks] = useState(initialFeedbacks);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [newResponse, setNewResponse] = useState("");
   const [activeFeedback, setActiveFeedback] = useState(null);
   const [filter, setFilter] = useState("all");
@@ -84,8 +13,9 @@ const FeedbackSystem = () => {
     averageRating: 0,
     ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
   });
+  const [loading, setLoading] = useState(true);
 
-  // Auto-response templates based on rating
+  // Auto-response templates
   const autoResponses = {
     1: "Kami sangat menyesal mendengar pengalaman Anda. Tim kami akan segera menindaklanjuti keluhan ini.",
     2: "Kami memohon maaf atas ketidakpuasan Anda. Kami akan memperbaiki pelayanan kami.",
@@ -93,6 +23,32 @@ const FeedbackSystem = () => {
     4: "Terima kasih atas rating 4 bintang! Kami senang Anda menikmati pengalaman di Fore Coffee.",
     5: "Terima kasih atas rating 5 bintang! Kami sangat senang Anda menikmati kopi dan pelayanan kami."
   };
+
+  // Fetch feedbacks from Supabase
+  const fetchFeedbacks = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('feedbacks')
+        .select(`
+          *,
+          feedback_responses (*)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      setFeedbacks(data || []);
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, []);
 
   // Calculate stats
   useEffect(() => {
@@ -119,40 +75,97 @@ const FeedbackSystem = () => {
       (filter === "low" && feedback.rating <= 2);
     
     const matchesSearch = 
-      feedback.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      feedback.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       feedback.comment.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesFilter && matchesSearch;
   });
 
   // Handle send response
-  const handleSendResponse = () => {
+  const handleSendResponse = async () => {
     if (!newResponse.trim() || !activeFeedback) return;
     
-    const newResponseObj = {
-      id: Date.now(),
-      type: "manual",
-      message: newResponse,
-      date: new Date().toISOString().split('T')[0],
-      staffName: "Anda", // Ini bisa diganti dengan nama staff dari CRM
-      staffRole: "Staff" // Ini bisa diganti dengan role dari CRM
-    };
-    
-    const updatedFeedbacks = feedbacks.map(fb => 
-      fb.id === activeFeedback.id 
-        ? { ...fb, responses: [...fb.responses, newResponseObj] }
-        : fb
-    );
-    
-    setFeedbacks(updatedFeedbacks);
-    setNewResponse("");
+    try {
+      // Insert new response
+      const { data: response, error } = await supabase
+        .from('feedback_responses')
+        .insert([{
+          feedback_id: activeFeedback.id,
+          message: newResponse,
+          response_type: 'manual',
+          staff_name: 'Admin',
+          staff_role: 'Staff'
+        }])
+        .select();
+      
+      if (error) throw error;
+      
+      // Update local state
+      const updatedFeedbacks = feedbacks.map(fb => 
+        fb.id === activeFeedback.id 
+          ? { 
+              ...fb, 
+              feedback_responses: [...fb.feedback_responses, response[0]] 
+            } 
+          : fb
+      );
+      
+      setFeedbacks(updatedFeedbacks);
+      setNewResponse("");
+    } catch (error) {
+      console.error('Error sending response:', error.message);
+    }
+  };
+
+  // Handle auto response
+  const handleAutoResponse = async (feedback) => {
+    try {
+      // Insert auto response
+      const { data: response, error } = await supabase
+        .from('feedback_responses')
+        .insert([{
+          feedback_id: feedback.id,
+          message: autoResponses[feedback.rating],
+          response_type: 'auto'
+        }])
+        .select();
+      
+      if (error) throw error;
+      
+      // Update local state
+      const updatedFeedbacks = feedbacks.map(fb => 
+        fb.id === feedback.id 
+          ? { 
+              ...fb, 
+              feedback_responses: [...fb.feedback_responses, response[0]] 
+            } 
+          : fb
+      );
+      
+      setFeedbacks(updatedFeedbacks);
+    } catch (error) {
+      console.error('Error sending auto response:', error.message);
+    }
   };
 
   // Handle resolve toggle
-  const toggleResolve = (id) => {
-    setFeedbacks(feedbacks.map(fb => 
-      fb.id === id ? { ...fb, resolved: !fb.resolved } : fb
-    ));
+  const toggleResolve = async (id) => {
+    try {
+      const feedback = feedbacks.find(fb => fb.id === id);
+      const { error } = await supabase
+        .from('feedbacks')
+        .update({ resolved: !feedback.resolved })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setFeedbacks(feedbacks.map(fb => 
+        fb.id === id ? { ...fb, resolved: !fb.resolved } : fb
+      ));
+    } catch (error) {
+      console.error('Error toggling resolve status:', error.message);
+    }
   };
 
   // Render stars
@@ -183,6 +196,17 @@ const FeedbackSystem = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 flex justify-center items-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Memuat feedback...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -277,8 +301,10 @@ const FeedbackSystem = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="flex items-center mb-1">
-                        <div className="font-medium text-gray-800 mr-2">{feedback.customerName}</div>
-                        <div className="text-sm text-gray-500">{feedback.date}</div>
+                        <div className="font-medium text-gray-800 mr-2">{feedback.customer_name}</div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(feedback.created_at).toLocaleDateString()}
+                        </div>
                       </div>
                       <div className="mb-2">
                         {renderStars(feedback.rating)}
@@ -304,13 +330,13 @@ const FeedbackSystem = () => {
                   </div>
                   
                   {/* Responses preview */}
-                  {feedback.responses.length > 0 && (
+                  {feedback.feedback_responses.length > 0 && (
                     <div className="mt-3 pl-4 border-l-2 border-green-500">
                       <div className="text-sm text-gray-500 mb-1">
-                        {feedback.responses.length} tanggapan
+                        {feedback.feedback_responses.length} tanggapan
                       </div>
                       <div className="text-sm text-gray-700 line-clamp-1">
-                        {feedback.responses[feedback.responses.length - 1].message}
+                        {feedback.feedback_responses[feedback.feedback_responses.length - 1].message}
                       </div>
                     </div>
                   )}
@@ -332,14 +358,16 @@ const FeedbackSystem = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                    <FiUser className="mr-2" /> {activeFeedback.customerName}
+                    <FiUser className="mr-2" /> {activeFeedback.customer_name}
                   </h3>
                   <div className="text-sm text-gray-500 mb-2">{activeFeedback.email}</div>
                   <div className="flex items-center">
                     <div className="mr-3">
                       {renderStars(activeFeedback.rating)}
                     </div>
-                    <div className="text-sm text-gray-500">{activeFeedback.date}</div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(activeFeedback.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
                 
@@ -365,28 +393,13 @@ const FeedbackSystem = () => {
               </div>
               
               {/* Auto response suggestion */}
-              {!activeFeedback.responses.some(r => r.type === "auto") && (
+              {!activeFeedback.feedback_responses.some(r => r.response_type === "auto") && (
                 <div className="mb-6">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Balasan Otomatis Disarankan:</h4>
                   <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
                     <p className="text-blue-800 mb-2">{autoResponses[activeFeedback.rating]}</p>
                     <button
-                      onClick={() => {
-                        const autoResponse = {
-                          id: Date.now(),
-                          type: "auto",
-                          message: autoResponses[activeFeedback.rating],
-                          date: new Date().toISOString().split('T')[0]
-                        };
-                        
-                        const updatedFeedbacks = feedbacks.map(fb => 
-                          fb.id === activeFeedback.id 
-                            ? { ...fb, responses: [...fb.responses, autoResponse] }
-                            : fb
-                        );
-                        
-                        setFeedbacks(updatedFeedbacks);
-                      }}
+                      onClick={() => handleAutoResponse(activeFeedback)}
                       className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200"
                     >
                       Kirim Balasan Otomatis
@@ -398,25 +411,33 @@ const FeedbackSystem = () => {
               {/* Responses */}
               <div className="space-y-4 mb-6">
                 <h4 className="font-medium text-gray-700">
-                  Tanggapan ({activeFeedback.responses.length})
+                  Tanggapan ({activeFeedback.feedback_responses.length})
                 </h4>
                 
-                {activeFeedback.responses.length > 0 ? (
-                  activeFeedback.responses.map(response => (
+                {activeFeedback.feedback_responses.length > 0 ? (
+                  activeFeedback.feedback_responses.map(response => (
                     <div 
                       key={response.id} 
                       className={`p-4 rounded-lg ${
-                        response.type === "auto" ? 'bg-green-50 border border-green-100' : 'bg-white border border-gray-200'
+                        response.response_type === "auto" 
+                          ? 'bg-green-50 border border-green-100' 
+                          : 'bg-white border border-gray-200'
                       }`}
                     >
                       <div className="flex justify-between items-start mb-1">
                         <div className="font-medium text-gray-800">
-                          {response.type === "auto" ? 'Balasan Otomatis' : response.staffName}
+                          {response.response_type === "auto" 
+                            ? 'Balasan Otomatis' 
+                            : response.staff_name || 'Staff'}
                         </div>
-                        <div className="text-sm text-gray-500">{response.date}</div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(response.created_at).toLocaleDateString()}
+                        </div>
                       </div>
-                      {response.type === "manual" && (
-                        <div className="text-xs text-gray-500 mb-1">{response.staffRole}</div>
+                      {response.response_type === "manual" && (
+                        <div className="text-xs text-gray-500 mb-1">
+                          {response.staff_role || 'Staff'}
+                        </div>
                       )}
                       <p className="text-gray-700">{response.message}</p>
                     </div>

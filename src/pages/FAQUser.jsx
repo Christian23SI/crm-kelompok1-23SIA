@@ -1,55 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaChevronDown,
   FaChevronUp,
   FaSearch
 } from "react-icons/fa";
+import { supabase } from "../supabase";
 
 
 const FaqUser = () => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedFaqs, setExpandedFaqs] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Data FAQ - dalam implementasi nyata ini bisa diambil dari props/API
-  const faqs = [
-    {
-      id: 1,
-      kategori: "Masalah Akun",
-      pertanyaan: "Bagaimana cara reset password?",
-      jawaban: 'Anda dapat mereset password dengan mengklik tombol "Lupa Password" di halaman login. Sistem akan mengirimkan link reset password ke email yang terdaftar. Ikuti instruksi dalam email tersebut untuk membuat password baru.',
-    },
-    {
-      id: 2,
-      kategori: "Masalah Akun",
-      pertanyaan: "Bagaimana cara mengubah email?",
-      jawaban: "Untuk mengubah alamat email, masuk ke menu Pengaturan Akun di profil Anda. Klik tombol 'Edit Email' dan masukkan alamat email baru Anda. Kami akan mengirimkan email verifikasi ke alamat baru tersebut untuk memastikan keamanan akun Anda.",
-    },
-    {
-      id: 3,
-      kategori: "Pembelian & Pembayaran",
-      pertanyaan: "Metode pembayaran apa saja yang tersedia?",
-      jawaban: "Kami menerima berbagai metode pembayaran termasuk:\n- Kartu kredit/debit (Visa, Mastercard)\n- E-wallet (Gopay, OVO, Dana)\n- Transfer bank (BCA, Mandiri, BRI, BNI)\n- Pembayaran di tempat (COD) untuk area tertentu",
-    },
-    {
-      id: 4,
-      kategori: "Pembelian & Pembayaran",
-      pertanyaan: "Berapa lama waktu proses pembayaran?",
-      jawaban: "Pembayaran melalui e-wallet dan kartu kredit biasanya diproses secara instan. Untuk transfer bank, proses verifikasi mungkin memakan waktu 1-3 jam. Jika pembayaran Anda belum terverifikasi setelah 3 jam, silakan hubungi customer service kami.",
-    },
-    {
-      id: 5,
-      kategori: "Pengiriman",
-      pertanyaan: "Berapa lama waktu pengiriman?",
-      jawaban: "Waktu pengiriman bervariasi tergantung lokasi Anda:\n- Jabodetabek: 1-2 hari kerja\n- Pulau Jawa: 2-3 hari kerja\n- Luar Jawa: 3-5 hari kerja\n- Daerah terpencil: 5-7 hari kerja\nKami akan mengirimkan nomor resi yang dapat Anda lacak melalui website kami atau website jasa pengiriman.",
-    },
-    {
-      id: 6,
-      kategori: "Pengiriman",
-      pertanyaan: "Apakah tersedia pengiriman internasional?",
-      jawaban: "Saat ini kami hanya melayani pengiriman dalam negeri (Indonesia). Kami sedang mempersiapkan layanan pengiriman internasional yang akan segera hadir di masa depan. Silakan pantau terus website kami untuk informasi terbaru.",
-    },
-  ];
+  // Fetch data dari Supabase
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('faqs')
+          .select('*')
+          .order('kategori', { ascending: true });
+
+        if (error) throw error;
+        
+        setFaqs(data || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching FAQs:', err);
+        setError('Gagal memuat data FAQ. Silakan coba lagi.');
+        setFaqs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFaqs();
+  }, []);
 
   // Kategori unik
   const categories = [...new Set(faqs.map(faq => faq.kategori))];
@@ -77,6 +67,34 @@ const FaqUser = () => {
         : [...prev, id]
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat data FAQ...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div className="max-w-4xl mx-auto text-center bg-white p-8 rounded-xl shadow-sm">
+          <h3 className="text-lg font-medium text-gray-700 mb-2">Terjadi Kesalahan</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
