@@ -2,20 +2,22 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
-export default function MainLayout() {
+const MainLayout = () => {
     return (
         <div className="flex min-h-screen bg-gray-100">
             <div className="sticky top-0 h-screen">
                 <Sidebar className="h-full" />
             </div>
-            
-            {/* Konten utama */}
-            <div className="flex-1 flex flex-col min-h-screen">
+
+            <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
                 <Header />
-                <main className="flex-1 p-6 bg-white">
+                
+                <main className="flex-1 p-6 bg-white overflow-auto">
                     <Outlet />
                 </main>
             </div>
         </div>
     );
 };
+
+export default MainLayout;
