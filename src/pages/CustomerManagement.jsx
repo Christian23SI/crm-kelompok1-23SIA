@@ -8,8 +8,8 @@ const CustomerManagement = () => {
   const initialCustomers = [
     {
       id: 1,
-      name: 'Budi Santoso',
-      email: 'budi@mail.com',
+      name: 'Abellia ',
+      email: 'abel@gmail.com',
       phone: '081234567890',
       tier: 'Gold',
       points: 1250,
@@ -23,7 +23,7 @@ const CustomerManagement = () => {
     {
       id: 2,
       name: 'Siti Aminah',
-      email: 'siti@mail.com',
+      email: 'siti@gmail.com',
       phone: '089876543210',
       tier: 'Platinum',
       points: 3200,
@@ -36,7 +36,7 @@ const CustomerManagement = () => {
     {
       id: 3,
       name: 'Andi Wijaya',
-      email: 'andi@mail.com',
+      email: 'andi@gmail.com',
       phone: '081299988877',
       tier: 'Silver',
       points: 450,

@@ -153,39 +153,47 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-amber-20 p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-amber-700 to-amber-900 rounded-3xl p-6 mb-8 text-white shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-amber-600/20 to-transparent"></div>
+        {/* Welcome Section - Updated with better gradient */}
+        <div className="relative rounded-3xl p-6 mb-8 text-white shadow-lg overflow-hidden">
+          {/* Gradient Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 opacity-90"></div>
+
+          {/* Subtle Pattern Overlay */}
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+          }}></div>
+
+          {/* Content */}
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between">
             <div className="flex items-center mb-4 md:mb-0">
-  <div className="relative">
-    <img
-      src={userData?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80"} 
-      alt={userData?.name || "User"}
-      className="w-16 h-16 rounded-full border-2 border-amber-300 object-cover bg-gray-200"
-      onError={(e) => {
-        e.target.onerror = null;
-        e.target.src = "https://i.pravatar.cc/150?img=31";
-      }}
-    />
-  </div>
-  <div className="ml-4">
-    <h1 className="text-2xl text-black font-bold">Welcome back, {userData?.name || 'Abellia'}!</h1>
-    <div className="flex items-center mt-1">
-      <span className="bg-amber-300/20 px-2 py-1 rounded-full text-xs text-yellow-700 font-medium flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-        </svg>
-        Gold Member
-      </span>
-      <span className="ml-2 text-amber-700 text-sm">• 12 orders this month</span>
-    </div>
-  </div>
-</div>
+              <div className="relative">
+                <img
+                  src={userData?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80"}
+                  alt={userData?.name || "User"}
+                  className="w-16 h-16 rounded-full border-2 border-amber-300 object-cover bg-gray-200"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://i.pravatar.cc/150?img=31";
+                  }}
+                />
+              </div>
+              <div className="ml-4">
+                <h1 className="text-2xl font-bold text-white">Welcome back, {userData?.name || 'Abellia'}!</h1>
+                <div className="flex items-center mt-1">
+                  <span className="bg-amber-300/20 px-2 py-1 rounded-full text-xs text-amber-100 font-medium flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    Gold Member
+                  </span>
+                  <span className="ml-2 text-amber-200 text-sm">• 12 orders this month</span>
+                </div>
+              </div>
+            </div>
             {orders.length > 2 && (
               <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-amber-300/20">
-                <p className="text-gray-700 text-sm">Last ordered</p>
-                <p className="font-semibold text-lg">
+                <p className="text-amber-100 text-sm">Last ordered</p>
+                <p className="font-semibold text-lg text-white">
                   {orders[0].items?.[0]?.name || "Your favorite drink"}
                 </p>
                 <button
@@ -224,44 +232,44 @@ export default function UserDashboard() {
         )}
 
         {/* Quick Stats */}
-<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-  {/* Active Vouchers */}
-  <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
-    <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Active Vouchers</p>
-    <p className="text-2xl font-bold text-amber-800 mt-1">3</p>
-    <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
-      <div className="bg-amber-500 h-1 rounded-full" style={{width: "60%"}}></div>
-    </div>
-  </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {/* Active Vouchers */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
+            <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Active Vouchers</p>
+            <p className="text-2xl font-bold text-amber-800 mt-1">3</p>
+            <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
+              <div className="bg-amber-500 h-1 rounded-full" style={{ width: "60%" }}></div>
+            </div>
+          </div>
 
-  {/* Monthly Orders */}
-  <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
-    <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Monthly Orders</p>
-    <p className="text-2xl font-bold text-amber-800 mt-1">20</p>
-    <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
-      <div className="bg-amber-500 h-1 rounded-full" style={{width: "100%"}}></div>
-    </div>
-  </div>
+          {/* Monthly Orders */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
+            <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Monthly Orders</p>
+            <p className="text-2xl font-bold text-amber-800 mt-1">20</p>
+            <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
+              <div className="bg-amber-500 h-1 rounded-full" style={{ width: "100%" }}></div>
+            </div>
+          </div>
 
-  {/* Favorite Category */}
-  <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
-    <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Favorite Category</p>
-    <p className="text-2xl font-bold text-amber-800 mt-1">Coffee</p>
-    <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
-      <div className="bg-amber-500 h-1 rounded-full" style={{width: "75%"}}></div>
-    </div>
-  </div>
+          {/* Favorite Category */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
+            <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Favorite Category</p>
+            <p className="text-2xl font-bold text-amber-800 mt-1">Coffee</p>
+            <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
+              <div className="bg-amber-500 h-1 rounded-full" style={{ width: "75%" }}></div>
+            </div>
+          </div>
 
-  {/* Loyalty Points - sekarang konsisten dengan yang lain */}
-  <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
-    <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Loyalty Points</p>
-    <p className="text-2xl font-bold text-amber-800 mt-1">1250</p>
-    <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
-      <div className="bg-amber-500 h-1 rounded-full" style={{width: "42%"}}></div>
-    </div>
-    <p className="text-xs text-amber-600 mt-1 text-center">1250/3000 points</p>
-  </div>
-</div>
+          {/* Loyalty Points - sekarang konsisten dengan yang lain */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
+            <p className="text-amber-600 text-xs uppercase font-semibold tracking-wider">Loyalty Points</p>
+            <p className="text-2xl font-bold text-amber-800 mt-1">1250</p>
+            <div className="w-full bg-amber-100 h-1 mt-2 rounded-full">
+              <div className="bg-amber-500 h-1 rounded-full" style={{ width: "42%" }}></div>
+            </div>
+            <p className="text-xs text-amber-600 mt-1 text-center">1250/3000 points</p>
+          </div>
+        </div>
 
         {/* Vouchers Section */}
         {vouchers.length > 0 && (
