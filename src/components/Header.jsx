@@ -14,6 +14,7 @@ const Header = () => {
       '/faq': 'FAQ',
       '/inventaris': 'Inventory Management',
       '/feedback': 'Feedback Management',
+      '/predict': 'Prediction Page',
       '/email': 'Email Notification',
       '/akun': 'Account Settings',
       '/user': 'User Management'
