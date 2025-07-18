@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+
+// Register ChartJS components
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const LoyaltyPredictionPage = () => {
   const [formData, setFormData] = useState({
@@ -31,7 +36,7 @@ const LoyaltyPredictionPage = () => {
     setError(null);
     
     try {
-      const response = await axios.post('https://a1e8e394a383.ngrok-free.app/predict', {
+      const response = await axios.post('https://3583ed4af4a2.ngrok-free.app/predict', {
         usia: parseInt(formData.usia),
         membership: formData.membership,
         total_kunjungan: parseInt(formData.total_kunjungan),
@@ -118,7 +123,39 @@ const LoyaltyPredictionPage = () => {
     return info[prediction] || info['Biasa'];
   };
 
+  const getLoyaltyPercentage = () => {
+    if (!prediction) return { loyal: 0, notLoyal: 100 };
+    
+    const percentages = {
+      'Biasa': { loyal: 50, notLoyal: 50 },
+      'Loyal': { loyal: 75, notLoyal: 25 },
+      'Sangat Loyal': { loyal: 99, notLoyal: 1 },
+      'Berisiko Churn': { loyal: 15, notLoyal: 85 }
+    };
+    
+    return percentages[prediction] || { loyal: 50, notLoyal: 50 };
+  };
+
   const loyaltyInfo = getLoyaltyInfo();
+  const loyaltyPercentage = getLoyaltyPercentage();
+
+  const chartData = {
+    labels: ['Loyal', 'Tidak Loyal'],
+    datasets: [
+      {
+        data: [loyaltyPercentage.loyal, loyaltyPercentage.notLoyal],
+        backgroundColor: [
+          '#10B981',
+          '#EF4444'
+        ],
+        borderColor: [
+          '#047857',
+          '#B91C1C'
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -133,7 +170,6 @@ const LoyaltyPredictionPage = () => {
         </div>
         
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
-          {/* Navigation Tabs */}
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px">
               <button
@@ -153,7 +189,6 @@ const LoyaltyPredictionPage = () => {
             </nav>
           </div>
           
-          {/* Tab Content */}
           <div className="p-6 sm:p-8">
             {activeTab === 'prediction' ? (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -188,7 +223,7 @@ const LoyaltyPredictionPage = () => {
                         onChange={handleChange}
                         className="block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         required
-                        min="1"
+                        min="18"
                         placeholder="Usia pelanggan"
                       />
                     </div>
@@ -328,6 +363,41 @@ const LoyaltyPredictionPage = () => {
                       <p className="mt-1 text-sm text-gray-600">
                         {loyaltyInfo.description}
                       </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Pie Chart Section */}
+                <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+                  <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Tingkat Loyalitas
+                    </h3>
+                  </div>
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="max-w-md mx-auto">
+                      <Pie 
+                        data={chartData} 
+                        options={{
+                          responsive: true,
+                          plugins: {
+                            legend: {
+                              position: 'bottom',
+                            },
+                            tooltip: {
+                              callbacks: {
+                                label: function(context) {
+                                  return `${context.label}: ${context.raw}%`;
+                                }
+                              }
+                            }
+                          }
+                        }}
+                      />
+                      <div className="mt-4 text-center text-sm text-gray-600">
+                        <p>Pelanggan ini memiliki <span className="font-semibold">{loyaltyPercentage.loyal}%</span> kecenderungan loyalitas</p>
+                        <p>dan <span className="font-semibold">{loyaltyPercentage.notLoyal}%</span> risiko tidak loyal</p>
+                      </div>
                     </div>
                   </div>
                 </div>
