@@ -16,6 +16,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Logo from '../assets/Logo.png';
 import { FiMail } from 'react-icons/fi';
 import { useAuth } from '../pages/AuthContext'; // Import useAuth
+import { MdBatchPrediction } from 'react-icons/md';
 
 const menuItems = [
   { name: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
@@ -25,6 +26,7 @@ const menuItems = [
   { name: 'Penjualan', icon: <ShoppingCart />, path: '/penjualan' },
   { name: 'FAQ', icon: <Users />, path: '/faq' },
   { name: 'Manajemen Feedback', icon: <MessagesSquareIcon />, path: '/feedback' },
+  { name: 'Prediksi Loyalitas', icon: <MdBatchPrediction />, path: '/predict' },
   { name: 'Email Notification', icon: <FiMail />, path: '/email' },
 ]
 
