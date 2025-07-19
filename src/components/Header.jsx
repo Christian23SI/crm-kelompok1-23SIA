@@ -15,6 +15,7 @@ const Header = () => {
       '/inventaris': 'Inventory Management',
       '/feedback': 'Feedback Management',
       '/predict': 'Prediction Page',
+      '/ramalan': 'Sales Forecasting',
       '/email': 'Email Notification',
       '/akun': 'Account Settings',
       '/user': 'User Management'

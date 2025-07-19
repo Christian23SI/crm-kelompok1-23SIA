@@ -36,7 +36,7 @@ const LoyaltyPredictionPage = () => {
     setError(null);
     
     try {
-      const response = await axios.post('https://3583ed4af4a2.ngrok-free.app/predict', {
+      const response = await axios.post('https://2abb6ee114b2.ngrok-free.app/predict', {
         usia: parseInt(formData.usia),
         membership: formData.membership,
         total_kunjungan: parseInt(formData.total_kunjungan),
@@ -160,7 +160,7 @@ const LoyaltyPredictionPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 transform transition-all duration-500 hover:scale-105">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
             Prediksi Loyalitas Pelanggan Fore Coffee
           </h1>

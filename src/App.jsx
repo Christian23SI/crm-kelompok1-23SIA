@@ -24,6 +24,7 @@ import Loading from './components/Loading';
 import AccountSettingUser from './pages/AccountSettingUser';
 import OrderHistory from './pages/OrderHistory';
 import LoyaltyPredictionPage from './pages/LoyaltyPredictionPage';
+import SalesPredictionPage from './pages/SalesPredictionPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -84,6 +85,7 @@ function App() {
         <Route path='/email' element={<EmailNotification />} />
         <Route path='/akun' element={<AccountSetting />} />
         <Route path='/predict' element={<LoyaltyPredictionPage />} />
+        <Route path='/ramalan' element={<SalesPredictionPage />} />
         <Route path='/user' element={<User />} />
       </Route>
       

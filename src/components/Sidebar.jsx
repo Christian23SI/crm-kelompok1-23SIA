@@ -10,7 +10,8 @@ import {
   UserPlus,
   MessagesSquareIcon,
   List,
-  LogOut // Tambahkan icon logout dari lucide-react
+  LogOut, // Tambahkan icon logout dari lucide-react
+  BarChart
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Logo from '../assets/Logo.png';
@@ -27,6 +28,7 @@ const menuItems = [
   { name: 'FAQ', icon: <Users />, path: '/faq' },
   { name: 'Manajemen Feedback', icon: <MessagesSquareIcon />, path: '/feedback' },
   { name: 'Prediksi Loyalitas', icon: <MdBatchPrediction />, path: '/predict' },
+  { name: 'Ramalan Penjualan', icon: <BarChart />, path: '/ramalan' },
   { name: 'Email Notification', icon: <FiMail />, path: '/email' },
 ]
 
